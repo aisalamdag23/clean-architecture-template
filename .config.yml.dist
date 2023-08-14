@@ -1,0 +1,50 @@
+header:
+  specformat: "1.0"
+
+spec:
+  general:
+    app_name: users-api
+    cors_origin: *
+    login_expiry: 15
+    remember_me_expiry: 43200
+    # used for http cookie site config and creating url for emails
+    frontend_url: "http://localhost:4000"
+    http_addr: :8080
+    http_write_timeout_sec: 15
+    http_read_timeout_sec: 15
+    http_idle_timeout_sec: 60
+    graceful_shutdown_wait_time_sec: 2
+    log_level: debug
+  smtp:
+    host: smtp.example.com
+    port: 587
+    username: test@gmail.com
+    password: password
+    from: mail@example.com
+  database:
+    driver: mysql
+    credentials:
+      host: localhost:3306
+      name: service
+      user: root
+      pass: dbpass
+    protocol: tcp
+    read_timeout_sec: 1
+    write_timeout_sec: 5
+    max_open_conn: 50
+    conn_lifetime_sec: 60
+  security:
+    whitelisted_endpoints:
+      - POST /api/v1/users # registration
+      - POST /api/v1/account/login # login
+    verify_keys:
+      - issuer_name: users-api
+        verify_key: |
+          -----BEGIN PUBLIC KEY-----
+          certificate contents
+          -----END PUBLIC KEY-----
+    sign_name: users-api
+    signing_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      certificate contents
+      -----END RSA PRIVATE KEY-----
