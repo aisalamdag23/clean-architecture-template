@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
+
+	"github.com/aisalamdag23/clean-architecture-template/internal/infrastructure/config"
+	"github.com/aisalamdag23/clean-architecture-template/internal/infrastructure/logger"
+	"github.com/aisalamdag23/clean-architecture-template/internal/infrastructure/protocol/rest"
 )
 
 var (
@@ -13,24 +18,20 @@ var (
 )
 
 func main() {
-	if err := run(); err != nil {
+	if err := run(CommitHash, Tag); err != nil {
 		log.Fatalln(err)
 	}
 }
 
-// func run(commitHash string, tag string) error {
-// 	ctx := context.Background()
+func run(commitHash string, tag string) error {
+	ctx := context.Background()
 
-// 	cfg, err := config.Load(commitHash, tag)
-// 	if err != nil {
-// 		return fmt.Errorf("unable to load configurations: '%v'", err)
-// 	}
+	cfg, err := config.Load(commitHash, tag)
+	if err != nil {
+		return fmt.Errorf("unable to load configurations: '%v'", err)
+	}
 
-// 	lgr := logger.NewLogger(cfg.General.LogLevel)
+	lgr := logger.NewLogger(cfg.General.LogLevel)
 
-// 	return rest.RunServer(ctx, cfg, lgr)
-// }
-func run() error {
-	fmt.Println("TEST")
-	return nil
+	return rest.RunServer(ctx, cfg, lgr)
 }
