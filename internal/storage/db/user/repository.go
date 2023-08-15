@@ -70,17 +70,6 @@ func (r *repository) Activate(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-func (r *repository) UpdatePassword(ctx context.Context, email string, password string) error {
-	query := `	UPDATE users SET
-					password = ?, password_changed_date = CURRENT_TIMESTAMP
-				WHERE 
-				    email = ?`
-
-	_, err := r.db.Exec(query, password, email)
-
-	return err
-}
-
 // GetByEmail ...
 func (r *repository) GetByEmailWithPassword(ctx context.Context, email string) (*domain.UserWithPassword, error) {
 	query := `
@@ -328,91 +317,6 @@ func (r *repository) Update(ctx context.Context, user domain.User) error {
 	return err
 }
 
-// UpdateStatus deactivates or activates existing user
-func (r *repository) UpdateStatus(ctx context.Context, user domain.User, reason string, admin domain.User) error {
-	query := `	
-				UPDATE users 
-				SET
-					account_status = ?
-				WHERE 
-				    id = UUID_TO_BIN(?)`
-
-	_, err := r.db.Exec(query,
-		user.AccountStatus,
-		user.ID)
-
-	if err == nil {
-		insLog := domain.DeactivateLog{
-			UpdatedBy: admin.ID,
-			AdminName: admin.LastName + ", " + admin.FirstName,
-		}
-
-		if reason != "" && !user.AccountStatus {
-			insLog.Reason = reason
-		}
-
-		log, err := json.Marshal(insLog)
-
-		action := "ACTIVATE_USER"
-		if !user.AccountStatus {
-			action = "DEACTIVATE_USER"
-		}
-
-		if err == nil {
-			_ = r.createLog(ctx, activityLog{
-				userID: user.ID,
-				log:    string(log),
-				action: action,
-			})
-		} else {
-			logger.WithField(ctx, "users.createLog.jsonMarshal.error", err.Error())
-		}
-	}
-
-	return err
-}
-
-// UpdateRole change user's role
-func (r *repository) UpdateRole(ctx context.Context, user domain.User, reason string, admin domain.User) error {
-	query := `	
-				UPDATE users 
-				SET
-					role = ?
-				WHERE 
-				    id = UUID_TO_BIN(?)`
-
-	_, err := r.db.Exec(query,
-		strings.ToUpper(user.Role),
-		user.ID)
-
-	if err == nil {
-		insLog := domain.DeactivateLog{
-			UpdatedBy: admin.ID,
-			AdminName: admin.LastName + ", " + admin.FirstName,
-		}
-
-		if reason != "" {
-			insLog.Reason = reason
-		}
-
-		log, err := json.Marshal(insLog)
-
-		action := "UPDATE_USER_ROLE"
-
-		if err == nil {
-			_ = r.createLog(ctx, activityLog{
-				userID: user.ID,
-				log:    string(log),
-				action: action,
-			})
-		} else {
-			logger.WithField(ctx, "users.createLog.jsonMarshal.error", err.Error())
-		}
-	}
-
-	return err
-}
-
 func (r *repository) createLog(ctx context.Context, activity activityLog) error {
 	query := `
 				INSERT INTO activity_logs
@@ -428,43 +332,4 @@ func (r *repository) createLog(ctx context.Context, activity activityLog) error 
 
 	// return err
 	return err
-}
-
-func (r *repository) GetUserLogs(ctx context.Context, userID uuid.UUID, action string) ([]domain.ActivityLog, error) {
-	query := `
-				SELECT 
-					* 
-				FROM activity_logs 
-				WHERE 
-					user_id = UUID_TO_BIN(?, true)`
-
-	if action != "" {
-		query += ` AND action = "` + action + `"`
-	} else {
-		query += ` AND action IN ("DEACTIVATE_USER", "UPDATE_USER_ROLE", "ACTIVATE_USER") `
-	}
-	query += ` ORDER BY created_at DESC`
-
-	var logs []domain.ActivityLog
-	rows, err := r.db.QueryContext(ctx, query, userID.String())
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, interr.NotFoundErr
-		}
-
-		return nil, fmt.Errorf("failed to execute GetByID query: %w", err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		log := domain.ActivityLog{}
-		err = rows.Scan(&log.ID, &log.UserID, &log.Log, &log.Action, &log.CreatedAt)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan logs")
-		}
-
-		logs = append(logs, log)
-	}
-
-	return logs, nil
 }

@@ -7,8 +7,6 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/google/uuid"
-
-	"github.com/aisalamdag23/clean-architecture-template/pkg/infrastructure/protocol/jwtparser"
 )
 
 type (
@@ -18,29 +16,15 @@ type (
 		GetByEmailWithPassword(ctx context.Context, email string) (*UserWithPassword, error)
 		GetByID(ctx context.Context, transactionID uuid.UUID) (*User, error)
 		Activate(ctx context.Context, transactionID uuid.UUID) error
-		UpdatePassword(ctx context.Context, email string, password string) error
 		GetAll(ctx context.Context, mapQuery map[string]string) (*UsersList, error)
-		GetUserLogs(ctx context.Context, userID uuid.UUID, action string) ([]ActivityLog, error)
-		UpdateStatus(ctx context.Context, user User, reason string, admin User) error
-		UpdateRole(ctx context.Context, user User, reason string, admin User) error
 	}
 
 	UserService interface {
 		Login(ctx context.Context, login Login) (*JWT, error)
-		GenerateAccessToken(ctx context.Context, token string) (*JWT, error)
-		Refresh(ctx context.Context, claims *jwtparser.RefreshTokenClaims, isAdmin bool) (*JWT, error)
 		Create(ctx context.Context, user Registration) (*User, error)
-		GetActivationLink(ctx context.Context, email string) string
-		GetForgotPasswordLink(ctx context.Context, email string) (string, error)
-		ValidateForgotPassword(ctx context.Context, token string) error
-		UpdatePassword(ctx context.Context, token string, password string) error
-		ActivateAccount(ctx context.Context, key string) error
 		Update(ctx context.Context, user User) (*User, error)
 		GetByID(ctx context.Context, transactionID uuid.UUID) (*User, error)
 		GetAll(ctx context.Context, userID uuid.UUID, params map[string][]string, validators map[string]int) (*UsersList, []string, error)
-		GetUserDeactivateLogs(ctx context.Context, authID, userID uuid.UUID, action string) ([]ActivityLog, error)
-		UpdateStatus(ctx context.Context, user User, reason string, authID uuid.UUID) error
-		UpdateRole(ctx context.Context, user User, reason string, authID uuid.UUID) error
 	}
 
 	User struct {
